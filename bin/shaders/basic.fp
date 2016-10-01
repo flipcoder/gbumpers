@@ -52,9 +52,9 @@ vec4 cel(float c)
     if(int(c * 7.0) % 2 == 1)
     {
         if(int((Position.x/2.0+0.5)*160) % 2 == int((Position.y/2.0+0.5)*144) % 2)
-            return lookup(c - 1.0/14.0);
+            return lookup(c - 1.0/7.0);
         else
-            return lookup(c + 1.0/14.0);
+            return lookup(c + 1.0/7.0);
     }
     return lookup(c);
 }
