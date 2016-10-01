@@ -30,11 +30,23 @@ void Game :: preload()
     
     m_Shader = m_pPipeline->load_shaders({"green"});
 
+    m_pPhysics = make_shared<Physics>(m_pRoot.get(), this);
+    
+    //m_pScene = m_pQor->make<Scene>("1.json");
+    //m_pRoot->add(m_pScene->root());
+    //auto meshes = m_pScene->root()->find_type<Mesh>();
+    //for(auto&& mesh: meshes)
+    //    mesh->set_physics(Node::STATIC);
+
 //    auto light = make_shared<Light>();
 //    light->dist(10000.0f);
 //    //light->specular(Color::white());
 //    light->position(glm::vec3(sw/2.0f, sh/2.0f, 10.0f));
 //    m_pRoot->add(light);
+
+    m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
+    m_pPhysics->world()->setGravity(btVector3(0.0, 0.0, 0.0));
+    
 }
 
 Game :: ~Game()
@@ -46,7 +58,10 @@ void Game :: enter()
 {
     auto sw = m_pQor->window()->size().x;
     auto sh = m_pQor->window()->size().y;
+
+    //LOG("loaded");
     
+    m_pCamera->size(ivec2(160,144));
     m_pCamera->ortho();
     m_pScrCamera->ortho();
     m_pPipeline->winding(true);
@@ -56,7 +71,7 @@ void Game :: enter()
     
     auto mat = make_shared<MeshMaterial>("bg.png", m_pQor->resources());
     auto mesh = make_shared<Mesh>(
-        make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(sw, sh))),
+        make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(160, 144))),
         vector<shared_ptr<IMeshModifier>>{
             make_shared<Wrap>(Prefab::quad_wrap(vec2(0.0f,1.0f), vec2(1.0f,0.0f)))
         }, mat
