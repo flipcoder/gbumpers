@@ -10,12 +10,6 @@ uniform sampler2D Texture;
 uniform vec3 Brightness;
 uniform vec4 MaterialDiffuse;
 
-// This color key stuff could be done on the CPU, and using a separate tex
-/*uniform vec4 ColorKeyLow;*/
-/*uniform vec4 ColorKeyHigh;*/
-/*uniform vec4 ColorReplaceLow;*/
-/*uniform vec4 ColorReplaceHigh;*/
-
 #define M_PI 3.1415926535897932384626433832795
 #define M_TAU (M_PI * 2.0)
 
@@ -79,10 +73,7 @@ void main()
         discard;
     }
     
-    /*gl_FragColor = fragcolor;*/
     float c = (color.r + color.g + color.b)/3.0;
     gl_FragColor = cel(c);
-
-    /*gl_FragColor = color * MaterialDiffuse * vec4(Brightness,1.0);*/
 }
 
