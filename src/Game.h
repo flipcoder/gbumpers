@@ -7,6 +7,7 @@
 #include "Qor/Camera.h"
 #include "Qor/Pipeline.h"
 #include "Qor/Mesh.h"
+#include "Qor/RenderBuffer.h"
 
 class Qor;
 
@@ -31,9 +32,15 @@ class Game:
         Qor* m_pQor = nullptr;
         Input* m_pInput = nullptr;
         Pipeline* m_pPipeline = nullptr;
+        std::shared_ptr<RenderBuffer> m_pRenderBuffer;
 
         std::shared_ptr<Node> m_pRoot;
         std::shared_ptr<Camera> m_pCamera;
+        std::shared_ptr<Node> m_pScrRoot;
+        std::shared_ptr<Camera> m_pScrCamera;
+
+        unsigned m_Shader = (unsigned)PassType::NONE;
+
 };
 
 #endif
