@@ -5,7 +5,7 @@
       "volume" : 10
    },
    "video" : {
-      "resolution" : "160x144",
+      "resolution" : "1120x1080",
       "vsync" : false,
       "windowed" : true
    }

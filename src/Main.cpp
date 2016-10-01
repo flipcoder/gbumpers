@@ -13,7 +13,7 @@ int main(int argc, const char** argv)
     Args args(argc, argv);
     args.set("mod", PACKAGE);
     args.set("title", PACKAGE);
-    args.set("loading_bg", "0d190d");
+    args.set("loading_bg", "0c540c");
     
     Texture::DEFAULT_FLAGS = Texture::TRANS | Texture::MIPMAP;
     

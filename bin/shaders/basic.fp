@@ -49,6 +49,16 @@ vec4 lookup(float c)
 
 vec4 cel(float c)
 {
+    if(int(c * 14.0) % 2 == 1)
+    {
+        vec4 darker = lookup(c - 1.0/7.0);
+        vec4 lighter = lookup(c + 1.0/7.0);
+        if(int((Position.x/2.0+0.5)*160) % 2 == 0 && int((Position.y/2.0+0.5)*144) % 2 == 0)
+            return (int(c * 7.0) % 2 == 1) ? darker : lighter;
+        else
+            return (int(c * 7.0) % 2 == 1) ? lighter : darker;
+    }
+    
     if(int(c * 7.0) % 2 == 1)
     {
         if(int((Position.x/2.0+0.5)*160) % 2 == int((Position.y/2.0+0.5)*144) % 2)
