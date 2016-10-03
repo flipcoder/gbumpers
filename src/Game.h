@@ -36,6 +36,7 @@ class Game:
         std::shared_ptr<RenderBuffer> m_pRenderBuffer;
 
         std::shared_ptr<Node> m_pRoot;
+        std::shared_ptr<Mesh> m_pPlayer;
         std::shared_ptr<Camera> m_pCamera;
         std::shared_ptr<Node> m_pScrRoot;
         std::shared_ptr<Camera> m_pScrCamera;

@@ -24,7 +24,6 @@ void Game :: preload()
     auto sh = m_pQor->window()->size().y;
     
     m_pCamera = make_shared<Camera>(m_pQor->resources(), m_pQor->window());
-    m_pRoot->add(m_pCamera);
     m_pScrCamera = make_shared<Camera>(m_pQor->resources(), m_pQor->window());
     m_pScrRoot->add(m_pScrCamera);
     
@@ -38,6 +37,23 @@ void Game :: preload()
     //for(auto&& mesh: meshes)
     //    mesh->set_physics(Node::STATIC);
     
+    m_pPlayer = m_pQor->make<Mesh>("bumpership.obj");
+    m_pPlayer->visible(false);
+    auto sz = 1.0f;
+    auto height = 0.5f;
+    m_pPlayer->set_box(Box(
+        glm::vec3(-sz, -height, -sz),
+        glm::vec3(sz, height, sz)
+    ));
+    m_pPlayer->set_physics(Node::DYNAMIC);
+    m_pPlayer->set_physics_shape(Node::CYLINDER);
+    m_pPlayer->mass(1.0f);
+    m_pPlayer->inertia(false);
+    m_pPlayer->add(m_pCamera);
+    //m_pCamera->position(glm::vec3(0.0f, -1.0f, 0.0f));
+    m_pPlayer->position(glm::vec3(0.0f, 0.25f, 0.0f));
+    m_pRoot->add(m_pPlayer);
+    
     auto mesh = m_pQor->make<Mesh>("level1.obj");
     m_pRoot->add(mesh);
     auto meshes = mesh->find_type<Mesh>();
@@ -45,7 +61,15 @@ void Game :: preload()
         mesh->set_physics(Node::STATIC);
 
     mesh = m_pQor->make<Mesh>("bumpership.obj");
-    mesh->position(glm::vec3(0.0f, 0.25f, 0.0f));
+    mesh->set_box(Box(
+        glm::vec3(-sz, -height, -sz),
+        glm::vec3(sz, height, sz)
+    ));
+    mesh->position(glm::vec3(0.0f, 0.25f, -2.0f));
+    mesh->set_physics(Node::DYNAMIC);
+    mesh->set_physics_shape(Node::CYLINDER);
+    mesh->mass(1.0f);
+    mesh->inertia(1.0f);
     m_pRoot->add(mesh);
 
     //auto light = make_shared<Light>();
@@ -53,7 +77,13 @@ void Game :: preload()
     //m_pRoot->add(light);
 
     m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
-    m_pPhysics->world()->setGravity(btVector3(0.0, 0.0, 0.0));
+    m_pPhysics->world()->setGravity(btVector3(0.0, -9.8, 0.0));
+
+    btRigidBody* player_body = (btRigidBody*)m_pPlayer->body()->body();
+    player_body->setFriction(0.0);
+    player_body->setCcdMotionThreshold(0.001f);
+    player_body->setCcdSweptSphereRadius(0.25f);
+    player_body->setActivationState(DISABLE_DEACTIVATION);
 }
 
 Game :: ~Game()
@@ -84,7 +114,7 @@ void Game :: enter()
     //    }, mat
     //);
     //m_pRoot->add(mesh);
-
+    
     auto scr = make_shared<Mesh>(
         make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(sw, sh))),
         vector<shared_ptr<IMeshModifier>>{
@@ -100,19 +130,35 @@ void Game :: logic(Freq::Time t)
         m_pQor->quit();
 
     m_pRoot->logic(t);
+    
+    float accel = 2.0f;
+    float turn_speed = 1.0f / 2.0f;
+    float max_speed = 2.0f;
 
+    glm::vec3 v = m_pPlayer->velocity();
     if(m_pInput->key(SDLK_e))
-        m_pCamera->move(glm::vec3(0.0f, 0.0f, -t.s()));
+        v += t.s() * accel * Matrix::heading(*m_pCamera->matrix_c());
     if(m_pInput->key(SDLK_d))
-        m_pCamera->move(glm::vec3(0.0f, 0.0f, t.s()));
+        v -= t.s() * accel * Matrix::heading(*m_pCamera->matrix_c());
     if(m_pInput->key(SDLK_s))
-        m_pCamera->move(glm::vec3(-t.s(), 0.0f, 0.0f));
+        m_pCamera->rotate(turn_speed * t.s(), Axis::Y);
     if(m_pInput->key(SDLK_f))
-        m_pCamera->move(glm::vec3(t.s(), 0.0f, 0.0f));
-    if(m_pInput->key(SDLK_a))
-        m_pCamera->move(glm::vec3(0.0f, -t.s(), 0.0f));
-    if(m_pInput->key(SDLK_SPACE))
-        m_pCamera->move(glm::vec3(0.0f, t.s(), 0.0f));
+        m_pCamera->rotate(turn_speed * -t.s(), Axis::Y);
+
+    glm::vec3 xz = glm::vec3(v.x, 0.0f, v.z);
+    float y = v.y;
+    if(glm::length(xz) >= max_speed){
+        v = glm::normalize(xz) * max_speed;
+        v.y = y;
+    }
+    
+    m_pPlayer->velocity(v);
+    m_pPhysics->logic(t);
+    
+    //if(m_pInput->key(SDLK_a))
+    //    m_pCamera->move(glm::vec3(0.0f, -t.s(), 0.0f));
+    //if(m_pInput->key(SDLK_SPACE))
+    //    m_pCamera->move(glm::vec3(0.0f, t.s(), 0.0f));
 
 }
 
