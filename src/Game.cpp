@@ -37,16 +37,23 @@ void Game :: preload()
     //auto meshes = m_pScene->root()->find_type<Mesh>();
     //for(auto&& mesh: meshes)
     //    mesh->set_physics(Node::STATIC);
+    
+    auto mesh = m_pQor->make<Mesh>("level1.obj");
+    m_pRoot->add(mesh);
+    auto meshes = mesh->find_type<Mesh>();
+    for(auto&& mesh: meshes)
+        mesh->set_physics(Node::STATIC);
 
-//    auto light = make_shared<Light>();
-//    light->dist(10000.0f);
-//    //light->specular(Color::white());
-//    light->position(glm::vec3(sw/2.0f, sh/2.0f, 10.0f));
-//    m_pRoot->add(light);
+    mesh = m_pQor->make<Mesh>("bumpership.obj");
+    mesh->position(glm::vec3(0.0f, 0.25f, 0.0f));
+    m_pRoot->add(mesh);
+
+    //auto light = make_shared<Light>();
+    //light->dist(10000.0f);
+    //m_pRoot->add(light);
 
     m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
     m_pPhysics->world()->setGravity(btVector3(0.0, 0.0, 0.0));
-    
 }
 
 Game :: ~Game()
@@ -59,24 +66,24 @@ void Game :: enter()
     auto sw = m_pQor->window()->size().x;
     auto sh = m_pQor->window()->size().y;
 
-    //LOG("loaded");
-    
     m_pCamera->size(ivec2(160,144));
-    m_pCamera->ortho();
+    m_pCamera->perspective();
+    //m_pCamera->ortho();
     m_pScrCamera->ortho();
-    m_pPipeline->winding(true);
+    //m_pPipeline->winding(true);
     m_pRenderBuffer = std::make_shared<RenderBuffer>(160,144);
-    m_pPipeline->bg_color(Color("0d540d"));
+    //m_pPipeline->bg_color(Color("0d540d"));
+    m_pPipeline->bg_color(Color::black());
     m_pInput->relative_mouse(false);
     
-    auto mat = make_shared<MeshMaterial>("bg.png", m_pQor->resources());
-    auto mesh = make_shared<Mesh>(
-        make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(160, 144))),
-        vector<shared_ptr<IMeshModifier>>{
-            make_shared<Wrap>(Prefab::quad_wrap(vec2(0.0f,1.0f), vec2(1.0f,0.0f)))
-        }, mat
-    );
-    m_pRoot->add(mesh);
+    //auto mat = make_shared<MeshMaterial>("bg.png", m_pQor->resources());
+    //auto mesh = make_shared<Mesh>(
+    //    make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(160, 144))),
+    //    vector<shared_ptr<IMeshModifier>>{
+    //        make_shared<Wrap>(Prefab::quad_wrap(vec2(0.0f,1.0f), vec2(1.0f,0.0f)))
+    //    }, mat
+    //);
+    //m_pRoot->add(mesh);
 
     auto scr = make_shared<Mesh>(
         make_shared<MeshGeometry>(Prefab::quad(vec2(0.0f, 0.0f), vec2(sw, sh))),
@@ -93,20 +100,35 @@ void Game :: logic(Freq::Time t)
         m_pQor->quit();
 
     m_pRoot->logic(t);
+
+    if(m_pInput->key(SDLK_e))
+        m_pCamera->move(glm::vec3(0.0f, 0.0f, -t.s()));
+    if(m_pInput->key(SDLK_d))
+        m_pCamera->move(glm::vec3(0.0f, 0.0f, t.s()));
+    if(m_pInput->key(SDLK_s))
+        m_pCamera->move(glm::vec3(-t.s(), 0.0f, 0.0f));
+    if(m_pInput->key(SDLK_f))
+        m_pCamera->move(glm::vec3(t.s(), 0.0f, 0.0f));
+    if(m_pInput->key(SDLK_a))
+        m_pCamera->move(glm::vec3(0.0f, -t.s(), 0.0f));
+    if(m_pInput->key(SDLK_SPACE))
+        m_pCamera->move(glm::vec3(0.0f, t.s(), 0.0f));
+
 }
 
 void Game :: render() const
 {
     float sw = m_pQor->window()->size().x;
     float sh = m_pQor->window()->size().y;
-    
-    m_pPipeline->override_shader(PassType::NORMAL, m_Shader);
+
+    m_pPipeline->winding(false);
+    m_pPipeline->override_shader(PassType::NORMAL, (unsigned)PassType::NONE);
     m_pRenderBuffer->push();
     m_pPipeline->render(m_pRoot.get(), m_pCamera.get());
     RenderBuffer::pop();
 
-    m_pPipeline->override_shader(PassType::NORMAL, (unsigned)PassType::NONE);
+    m_pPipeline->winding(true);
+    m_pPipeline->override_shader(PassType::NORMAL, m_Shader);
     m_pPipeline->render(m_pScrRoot.get(), m_pScrCamera.get());
-    //m_pPipeline->render(m_pRoot.get(), m_pCamera.get());
 }
 

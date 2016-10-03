@@ -1,4 +1,5 @@
 #version 120
+#extension GL_EXT_gpu_shader4 : enable
 #define MAX_LIGHTS 8
 
 uniform vec4 FogColor = vec4(0.0, 0.0, 0.0, 0.0);

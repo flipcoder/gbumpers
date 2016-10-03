@@ -16,7 +16,7 @@ int main(int argc, const char** argv)
     args.set("loading_bg", "0d540d");
     args.set("loading_shader", "green");
     
-    Texture::DEFAULT_FLAGS = Texture::TRANS | Texture::MIPMAP;
+    Texture::DEFAULT_FLAGS = Texture::TRANS | Texture::MIPMAP | Texture::FILTER;
     
 #ifndef DEBUG
     try{

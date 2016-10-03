@@ -14,6 +14,7 @@ attribute vec3 VertexPosition;
 attribute vec2 VertexWrap;
 attribute vec3 VertexNormal;
 
+varying vec3 ClipPos;
 varying vec3 Position;
 varying vec2 Wrap;
 varying vec3 Normal;
