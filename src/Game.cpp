@@ -28,6 +28,9 @@ void Game :: preload()
     m_pScrRoot->add(m_pScrCamera);
     
     m_Shader = m_pPipeline->load_shaders({"green"});
+    
+    m_pMusic = m_pQor->make<Sound>("chip.ogg");
+    m_pRoot->add(m_pMusic);
 
     m_pPhysics = make_shared<Physics>(m_pRoot.get(), this);
     
@@ -51,14 +54,46 @@ void Game :: preload()
     m_pPlayer->inertia(false);
     m_pPlayer->add(m_pCamera);
     //m_pCamera->position(glm::vec3(0.0f, -1.0f, 0.0f));
-    m_pPlayer->position(glm::vec3(0.0f, 0.25f, 0.0f));
     m_pRoot->add(m_pPlayer);
+    m_pPipeline->partitioner()->register_object(m_pPlayer, PLAYER);
+    auto _this = this;
+    m_pPipeline->partitioner()->on_collision(PLAYER, PLAYER_FLAG, [_this](Node* a, Node* b){
+        if(b->visible()){
+            LOG("flag");
+            ++_this->m_Flags;
+            b->detach();
+            b->visible(false);
+        }
+    });
     
     auto mesh = m_pQor->make<Mesh>("level1.obj");
     m_pRoot->add(mesh);
     auto meshes = mesh->find_type<Mesh>();
-    for(auto&& mesh: meshes)
-        mesh->set_physics(Node::STATIC);
+    for(auto&& mesh: meshes){
+        if(mesh->material()->texture()->filename().find("flag") != string::npos)
+        {
+            auto flag = m_pQor->make<Mesh>("flag.obj");
+            LOG(Vector::to_string(mesh->position(Space::WORLD)));
+            glm::vec3 pmin(mesh->geometry()->verts()[0]);
+            glm::vec3 pmax(mesh->geometry()->verts()[0]);
+            for(auto&& v: mesh->geometry()->verts())
+            {
+                if(v.x < pmin.x)
+                    pmin.x = v.x;
+                if(v.y < pmin.y)
+                    pmin.y = v.y;
+                if(v.z < pmin.z)
+                    pmin.z = v.z;
+            }
+            flag->position(pmin);
+            m_pRoot->add(flag);
+            m_pPipeline->partitioner()->register_object(flag, PLAYER_FLAG);
+            mesh->detach();
+            ++m_MaxFlags;
+        }
+        else
+            mesh->set_physics(Node::STATIC);
+    }
 
     mesh = m_pQor->make<Mesh>("bumpership.obj");
     mesh->set_box(Box(
@@ -84,6 +119,7 @@ void Game :: preload()
     player_body->setCcdMotionThreshold(0.001f);
     player_body->setCcdSweptSphereRadius(0.25f);
     player_body->setActivationState(DISABLE_DEACTIVATION);
+    m_pPlayer->position(glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 Game :: ~Game()
@@ -122,6 +158,8 @@ void Game :: enter()
         }, std::make_shared<MeshMaterial>(m_pRenderBuffer->texture())
     );
     m_pScrRoot->add(scr);
+
+    m_pMusic->play();
 }
 
 void Game :: logic(Freq::Time t)
@@ -133,7 +171,16 @@ void Game :: logic(Freq::Time t)
     
     float accel = 2.0f;
     float turn_speed = 1.0f / 2.0f;
-    float max_speed = 2.0f;
+    float max_speed = 3.0f;
+    
+    auto p = m_pPlayer->position();
+    auto hit = m_pPhysics->first_hit(
+        p, p - m_pPlayer->box().size().y - glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+    Node* hitnode = std::get<0>(hit);
+    auto norm = std::get<2>(hit);
+    if(norm.y > 0.8 && norm.y < 1.0 - K_EPSILON)
+        accel = 5.0f;
 
     glm::vec3 v = m_pPlayer->velocity();
     if(m_pInput->key(SDLK_e))
@@ -146,14 +193,17 @@ void Game :: logic(Freq::Time t)
         m_pCamera->rotate(turn_speed * -t.s(), Axis::Y);
 
     glm::vec3 xz = glm::vec3(v.x, 0.0f, v.z);
-    float y = v.y;
+    auto y = v.y;
     if(glm::length(xz) >= max_speed){
         v = glm::normalize(xz) * max_speed;
         v.y = y;
     }
+            
+    //m_pCamera->position(glm::vec3(p.x, p.y, p.z));
     
     m_pPlayer->velocity(v);
     m_pPhysics->logic(t);
+
     
     //if(m_pInput->key(SDLK_a))
     //    m_pCamera->move(glm::vec3(0.0f, -t.s(), 0.0f));

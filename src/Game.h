@@ -9,6 +9,7 @@
 #include "Qor/Mesh.h"
 #include "Qor/Scene.h"
 #include "Qor/RenderBuffer.h"
+#include "Qor/Sound.h"
 
 class Qor;
 
@@ -28,6 +29,13 @@ class Game:
             return true;
         }
 
+        enum ObjectTypes {
+            PLAYER,
+            ENEMY,
+            PLAYER_FLAG,
+            ENEMY_FLAG
+        };
+
     private:
         
         Qor* m_pQor = nullptr;
@@ -45,7 +53,11 @@ class Game:
 
         std::shared_ptr<Physics> m_pPhysics;
         std::shared_ptr<Scene> m_pScene;
+        
+        std::shared_ptr<Sound> m_pMusic;
 
+        int m_Flags = 0;
+        int m_MaxFlags = 0;
 };
 
 #endif
