@@ -1,4 +1,4 @@
-solution("bumpers")
+solution("gbumpers")
     targetdir("bin")
     
     configurations {"Debug", "Release"}
@@ -21,7 +21,7 @@ solution("bumpers")
         configuration "Release"
             defines { "NDEBUG" }
             flags { "OptimizeSpeed" }
-            targetname("bumpers_dist")
+            targetname("gbumpers_dist")
 
         -- gmake Config
         configuration "gmake"
@@ -143,7 +143,7 @@ solution("bumpers")
                 -- "/Gm-",
             -- }
 
-    project "bumpers"
+    project "gbumpers"
         kind "WindowedApp"
         language "C++"
 

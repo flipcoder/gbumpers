@@ -33,7 +33,11 @@ class Game:
             PLAYER,
             ENEMY,
             PLAYER_FLAG,
-            ENEMY_FLAG
+            ENEMY_FLAG,
+            SPRING,
+            GREEN_LIGHT,
+            RED_LIGHT,
+            SHIELD,
         };
 
     private:
@@ -58,6 +62,12 @@ class Game:
 
         int m_Flags = 0;
         int m_MaxFlags = 0;
+
+        int m_Springs = 0;
+        int m_Light = 0; // -1 red, 1 green
+
+        Freq::Alarm m_Shield;
+        bool m_Retrigger = true;
 };
 
 #endif

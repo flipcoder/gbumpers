@@ -15,7 +15,8 @@ Game :: Game(Qor* engine):
     m_pInput(engine->input()),
     m_pRoot(make_shared<Node>()),
     m_pScrRoot(make_shared<Node>()),
-    m_pPipeline(engine->pipeline())
+    m_pPipeline(engine->pipeline()),
+    m_Shield(engine->timer()->timeline())
 {}
 
 void Game :: preload()
@@ -24,6 +25,7 @@ void Game :: preload()
     auto sh = m_pQor->window()->size().y;
     
     m_pCamera = make_shared<Camera>(m_pQor->resources(), m_pQor->window());
+    m_pCamera->fov(54.0f);
     m_pScrCamera = make_shared<Camera>(m_pQor->resources(), m_pQor->window());
     m_pScrRoot->add(m_pScrCamera);
     
@@ -160,6 +162,8 @@ void Game :: enter()
     m_pScrRoot->add(scr);
 
     m_pMusic->play();
+
+    m_Shield.set(Freq::Time::ms(0));
 }
 
 void Game :: logic(Freq::Time t)
@@ -167,11 +171,12 @@ void Game :: logic(Freq::Time t)
     if(m_pInput->key(SDLK_ESCAPE))
         m_pQor->quit();
 
+    m_pPhysics->logic(t);
     m_pRoot->logic(t);
     
     float accel = 2.0f;
     float turn_speed = 1.0f / 2.0f;
-    float max_speed = 3.0f;
+    float max_speed = 3.0f + m_Light*1.0f;
     
     auto p = m_pPlayer->position();
     auto hit = m_pPhysics->first_hit(
@@ -202,8 +207,43 @@ void Game :: logic(Freq::Time t)
     //m_pCamera->position(glm::vec3(p.x, p.y, p.z));
     
     m_pPlayer->velocity(v);
-    m_pPhysics->logic(t);
 
+    if(not m_Shield.elapsed()) {
+        if(hitnode)
+        {
+            auto mesh = ((Mesh*)hitnode);
+            string tex = mesh->material()->texture()->filename();
+            if(tex.find("ramp") != string::npos)
+            {
+                if(m_Retrigger){
+                    auto geom = mesh->geometry()->verts();
+                    auto wrap = mesh->get_modifier<Wrap>()->data();
+                    LOG("wrap");
+                    for(auto&& w: wrap)
+                    {
+                        LOG(Vector::to_string(w));
+                    }
+                }
+                m_Retrigger = false;
+            }
+            else if(tex.find("flagmarker") != string::npos)
+            {
+                if(m_Retrigger){
+                }
+                m_Retrigger = false;
+            }
+            else if(tex.find("target") != string::npos)
+            {
+                if(m_Retrigger){
+                }
+                m_Retrigger = false;
+            }
+            else // normal ground
+            {
+                m_Retrigger = true;
+            }
+        }
+    }
     
     //if(m_pInput->key(SDLK_a))
     //    m_pCamera->move(glm::vec3(0.0f, -t.s(), 0.0f));

@@ -1,5 +1,5 @@
 # Blender MTL File: 'level1.blend'
-# Material Count: 4
+# Material Count: 7
 
 newmtl Material.001
 Ns 96.078431
@@ -10,18 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd /home/flipcoder/Dropbox/Alfred-Grady Share/bumpers/ground.png
-
-newmtl Material.001_ramp.png
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
-illum 2
-map_Kd /home/flipcoder/Dropbox/Alfred-Grady Share/bumpers/ramp.png
+map_Kd ground.png
 
 newmtl Material.002
 Ns 96.078431
@@ -32,7 +21,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd /home/flipcoder/Dropbox/Alfred-Grady Share/bumpers/brick.png
+map_Kd brick.png
 
 newmtl None
 Ns 0
@@ -41,4 +30,40 @@ Kd 0.8 0.8 0.8
 Ks 0.8 0.8 0.8
 d 1
 illum 2
-map_Kd /home/flipcoder/Dropbox/Alfred-Grady Share/bumpers/flag.png
+map_Kd target.png
+
+newmtl None_e_spawn.png
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd e_spawn.png
+
+newmtl None_flag.png
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd flag.png
+
+newmtl None_flag_marker.png
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd flag_marker.png
+
+newmtl None_ramp.png
+Ns 0
+Ka 0.000000 0.000000 0.000000
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2
+map_Kd ramp.png
