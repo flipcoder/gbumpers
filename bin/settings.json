@@ -1,8 +1,8 @@
 {
    "audio" : {
-      "music-volume" : 10,
-      "sound-volume" : 10,
-      "volume" : 10
+      "music-volume" : 100,
+      "sound-volume" : 100,
+      "volume" : 100
    },
    "video" : {
       "resolution" : "1120x1080",

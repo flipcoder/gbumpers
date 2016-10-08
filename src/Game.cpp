@@ -13,9 +13,11 @@ using namespace glm;
 Game :: Game(Qor* engine):
     m_pQor(engine),
     m_pInput(engine->input()),
+    m_pController(engine->session()->active_profile(0)->controller()),
     m_pRoot(make_shared<Node>()),
     m_pScrRoot(make_shared<Node>()),
     m_pPipeline(engine->pipeline()),
+    m_Disable(engine->timer()->timeline()),
     m_Shield(engine->timer()->timeline())
 {}
 
@@ -62,52 +64,70 @@ void Game :: preload()
     m_pPipeline->partitioner()->on_collision(PLAYER, PLAYER_FLAG, [_this](Node* a, Node* b){
         if(b->visible()){
             LOG("flag");
+            Sound::play(_this->m_pCamera.get(), "flag.wav", _this->m_pQor->resources());
             ++_this->m_Flags;
+            if(_this->m_Flags == _this->m_MaxFlags)
+                _this->next_map();
+
             b->detach();
             b->visible(false);
         }
     });
     
-    auto mesh = m_pQor->make<Mesh>("level1.obj");
+    auto mesh = m_pQor->make<Mesh>(
+        string("level") + m_pQor->args().value_or("map","1") + ".obj"
+    );
     m_pRoot->add(mesh);
     auto meshes = mesh->find_type<Mesh>();
     for(auto&& mesh: meshes){
+        glm::vec3 pmin(mesh->geometry()->verts()[0]);
+        for(auto&& v: mesh->geometry()->verts())
+        {
+            if(v.x < pmin.x)
+                pmin.x = v.x;
+            if(v.y < pmin.y)
+                pmin.y = v.y;
+            if(v.z < pmin.z)
+                pmin.z = v.z;
+        }
         if(mesh->material()->texture()->filename().find("flag") != string::npos)
         {
-            auto flag = m_pQor->make<Mesh>("flag.obj");
-            LOG(Vector::to_string(mesh->position(Space::WORLD)));
-            glm::vec3 pmin(mesh->geometry()->verts()[0]);
-            glm::vec3 pmax(mesh->geometry()->verts()[0]);
-            for(auto&& v: mesh->geometry()->verts())
-            {
-                if(v.x < pmin.x)
-                    pmin.x = v.x;
-                if(v.y < pmin.y)
-                    pmin.y = v.y;
-                if(v.z < pmin.z)
-                    pmin.z = v.z;
-            }
+            auto flag = m_pQor->make<Mesh>("flag.obj");//->instance();
             flag->position(pmin);
             m_pRoot->add(flag);
-            m_pPipeline->partitioner()->register_object(flag, PLAYER_FLAG);
             mesh->detach();
-            ++m_MaxFlags;
+            m_FlagSpawns.push_back(flag.get());
+        }
+        else if(mesh->material()->texture()->filename().find("e_spawn") != string::npos)
+        {
+            auto e = m_pQor->make<Mesh>("bumpership.obj");
+            e->set_box(Box(
+                glm::vec3(-sz, -height, -sz),
+                glm::vec3(sz, height, sz)
+            ));
+            e->position(glm::vec3(0.0f, 0.25f, -2.0f));
+            e->set_physics(Node::DYNAMIC);
+            e->set_physics_shape(Node::CYLINDER);
+            e->mass(1.0f);
+            e->inertia(1.0f);
+            m_pRoot->add(e);
+            e->position(pmin);
+            mesh->visible(false);
         }
         else
             mesh->set_physics(Node::STATIC);
     }
-
-    mesh = m_pQor->make<Mesh>("bumpership.obj");
-    mesh->set_box(Box(
-        glm::vec3(-sz, -height, -sz),
-        glm::vec3(sz, height, sz)
-    ));
-    mesh->position(glm::vec3(0.0f, 0.25f, -2.0f));
-    mesh->set_physics(Node::DYNAMIC);
-    mesh->set_physics_shape(Node::CYLINDER);
-    mesh->mass(1.0f);
-    mesh->inertia(1.0f);
-    m_pRoot->add(mesh);
+    std::random_shuffle(ENTIRE(m_FlagSpawns));
+    m_MaxFlags = m_FlagSpawns.size()/2; // half friendly, half enemy
+    for(int i=0; i<m_MaxFlags; ++i) {
+        m_pPipeline->partitioner()->register_object(m_FlagSpawns[i]->as_node(), PLAYER_FLAG);
+    }
+    for(int i=m_MaxFlags; i<m_MaxFlags*2; ++i) {
+        auto children = m_FlagSpawns[i]->children();
+        for(int j=0; j<children.size(); ++j){
+            ((Mesh*)children[j].get())->material("data/e_flag.png", m_pQor->resources());
+        }
+    }
 
     //auto light = make_shared<Light>();
     //light->dist(10000.0f);
@@ -136,6 +156,7 @@ void Game :: enter()
 
     m_pCamera->size(ivec2(160,144));
     m_pCamera->perspective();
+    m_pCamera->listen();
     //m_pCamera->ortho();
     m_pScrCamera->ortho();
     //m_pPipeline->winding(true);
@@ -163,6 +184,7 @@ void Game :: enter()
 
     m_pMusic->play();
 
+    m_Disable.set(Freq::Time::ms(0));
     m_Shield.set(Freq::Time::ms(0));
 }
 
@@ -188,13 +210,17 @@ void Game :: logic(Freq::Time t)
         accel = 5.0f;
 
     glm::vec3 v = m_pPlayer->velocity();
-    if(m_pInput->key(SDLK_e))
-        v += t.s() * accel * Matrix::heading(*m_pCamera->matrix_c());
-    if(m_pInput->key(SDLK_d))
-        v -= t.s() * accel * Matrix::heading(*m_pCamera->matrix_c());
-    if(m_pInput->key(SDLK_s))
+    if(m_Disable.elapsed()){
+        if(m_pController->button("up"))
+            v += t.s() * accel * Matrix::heading(*m_pCamera->matrix_c()) *
+                m_pController->button("up").pressure();
+        if(m_pController->button("down"))
+            v -= t.s() * accel * Matrix::heading(*m_pCamera->matrix_c()) *
+                m_pController->button("down").pressure();
+    }
+    if(m_pController->button("left"))
         m_pCamera->rotate(turn_speed * t.s(), Axis::Y);
-    if(m_pInput->key(SDLK_f))
+    if(m_pController->button("right"))
         m_pCamera->rotate(turn_speed * -t.s(), Axis::Y);
 
     glm::vec3 xz = glm::vec3(v.x, 0.0f, v.z);
@@ -203,12 +229,12 @@ void Game :: logic(Freq::Time t)
         v = glm::normalize(xz) * max_speed;
         v.y = y;
     }
-            
+    
     //m_pCamera->position(glm::vec3(p.x, p.y, p.z));
     
     m_pPlayer->velocity(v);
 
-    if(not m_Shield.elapsed()) {
+    if(m_Shield.elapsed()) {
         if(hitnode)
         {
             auto mesh = ((Mesh*)hitnode);
@@ -229,12 +255,16 @@ void Game :: logic(Freq::Time t)
             else if(tex.find("flagmarker") != string::npos)
             {
                 if(m_Retrigger){
+                    m_Flags = std::max(0, m_Flags - 1);
                 }
                 m_Retrigger = false;
             }
             else if(tex.find("target") != string::npos)
             {
                 if(m_Retrigger){
+                    Sound::play(m_pCamera.get(), "block.wav", m_pQor->resources());
+                    m_Disable.set(Freq::Time::seconds(3.0f));
+                    m_pPlayer->velocity(glm::vec3(0.0f));
                 }
                 m_Retrigger = false;
             }
@@ -266,5 +296,14 @@ void Game :: render() const
     m_pPipeline->winding(true);
     m_pPipeline->override_shader(PassType::NORMAL, m_Shader);
     m_pPipeline->render(m_pScrRoot.get(), m_pScrCamera.get());
+}
+
+void Game :: next_map()
+{
+    auto mapname = m_pQor->args().value_or("map","1");
+    auto nextmap = to_string(boost::lexical_cast<int>(mapname) + 1);
+
+    m_pQor->args().set("map", nextmap);
+    m_pQor->change_state("game");
 }
 

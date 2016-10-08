@@ -39,11 +39,14 @@ class Game:
             RED_LIGHT,
             SHIELD,
         };
-
+ 
     private:
+
+        void next_map();
         
         Qor* m_pQor = nullptr;
         Input* m_pInput = nullptr;
+        std::shared_ptr<Controller> m_pController;
         Pipeline* m_pPipeline = nullptr;
         std::shared_ptr<RenderBuffer> m_pRenderBuffer;
 
@@ -67,7 +70,10 @@ class Game:
         int m_Light = 0; // -1 red, 1 green
 
         Freq::Alarm m_Shield;
+        Freq::Alarm m_Disable;
         bool m_Retrigger = true;
+
+        std::vector<Node*> m_FlagSpawns;
 };
 
 #endif

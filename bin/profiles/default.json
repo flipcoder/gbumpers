@@ -3,18 +3,18 @@
     "sensitivity": 0.5,
     "input": {
         "binds": {
-            "z": [
+            "gamepad 1": [
                 "shoot",
                 "back"
             ],
-            "x": [
+            "gamepad 0": [
                 "jump",
                 "select"
             ],
-            "up": "up",
-            "down": "down",
-            "left": "left",
-            "right": "right"
+            "gamepad analog 2": "up",
+            "gamepad analog 3": "down",
+            "gamepad analog 0": "left",
+            "gamepad analog 1": "right"
         }
     }
 }
