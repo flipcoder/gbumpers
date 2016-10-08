@@ -102,7 +102,7 @@ void Game :: preload()
         }
         else if(mesh->material()->texture()->filename().find("e_spawn") != string::npos)
         {
-            auto e = m_pQor->make<Mesh>("bumpership.obj");
+            auto e = make_shared<Enemy>("enemy.json", this, m_pQor->resources());
             e->set_box(Box(
                 glm::vec3(-sz, -height, -sz),
                 glm::vec3(sz, height, sz)
@@ -115,7 +115,11 @@ void Game :: preload()
             m_pRoot->add(e);
             e->position(pmin);
             mesh->visible(false);
-            m_Enemies.push_back(e.get());
+            m_Enemies.push_back(e);
+        }
+        else if(mesh->material()->texture()->filename().find("nav") != string::npos)
+        {
+            m_Nav.push_back(mesh);
         }
         else{
             m_StaticMeshes.push_back(mesh);
@@ -143,7 +147,7 @@ void Game :: preload()
         }
     }
     for(auto&& mesh: m_Enemies) {
-        btRigidBody* body = (btRigidBody*)((Mesh*)mesh)->body()->body();
+        btRigidBody* body = (btRigidBody*)((Mesh*)mesh.get())->body()->body();
         body->setRestitution(1.0);
     }
     

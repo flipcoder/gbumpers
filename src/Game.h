@@ -10,6 +10,7 @@
 #include "Qor/Scene.h"
 #include "Qor/RenderBuffer.h"
 #include "Qor/Sound.h"
+#include "Enemy.h"
 
 class Qor;
 
@@ -39,6 +40,8 @@ class Game:
             RED_LIGHT,
             SHIELD,
         };
+
+        std::vector<Node*> nav() { return m_Nav; }
  
     private:
 
@@ -75,7 +78,8 @@ class Game:
 
         std::vector<Node*> m_FlagSpawns;
         std::vector<Node*> m_StaticMeshes;
-        std::vector<Node*> m_Enemies;
+        std::vector<std::shared_ptr<Enemy>> m_Enemies;
+        std::vector<Node*> m_Nav;
 };
 
 #endif
