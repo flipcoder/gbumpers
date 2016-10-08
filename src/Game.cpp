@@ -73,11 +73,13 @@ void Game :: preload()
             b->visible(false);
         }
     });
+
     
     auto mesh = m_pQor->make<Mesh>(
         string("level") + m_pQor->args().value_or("map","1") + ".obj"
     );
     m_pRoot->add(mesh);
+    
     auto meshes = mesh->find_type<Mesh>();
     for(auto&& mesh: meshes){
         glm::vec3 pmin(mesh->geometry()->verts()[0]);
@@ -109,13 +111,16 @@ void Game :: preload()
             e->set_physics(Node::DYNAMIC);
             e->set_physics_shape(Node::CYLINDER);
             e->mass(1.0f);
-            e->inertia(1.0f);
+            e->inertia(false);
             m_pRoot->add(e);
             e->position(pmin);
             mesh->visible(false);
+            m_Enemies.push_back(e.get());
         }
-        else
+        else{
+            m_StaticMeshes.push_back(mesh);
             mesh->set_physics(Node::STATIC);
+        }
     }
     std::random_shuffle(ENTIRE(m_FlagSpawns));
     m_MaxFlags = m_FlagSpawns.size()/2; // half friendly, half enemy
@@ -128,16 +133,27 @@ void Game :: preload()
             ((Mesh*)children[j].get())->material("data/e_flag.png", m_pQor->resources());
         }
     }
+    
+    m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
+    m_pPhysics->world()->setGravity(btVector3(0.0, -9.8, 0.0));
 
+    for(auto&& mesh: m_StaticMeshes) {
+        if(((Mesh*)mesh)->material()->texture()->filename().find("brick") != string::npos) {
+            ((btRigidBody*)mesh->body()->body())->setRestitution(1.0);
+        }
+    }
+    for(auto&& mesh: m_Enemies) {
+        btRigidBody* body = (btRigidBody*)((Mesh*)mesh)->body()->body();
+        body->setRestitution(1.0);
+    }
+    
     //auto light = make_shared<Light>();
     //light->dist(10000.0f);
     //m_pRoot->add(light);
 
-    m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
-    m_pPhysics->world()->setGravity(btVector3(0.0, -9.8, 0.0));
-
     btRigidBody* player_body = (btRigidBody*)m_pPlayer->body()->body();
     player_body->setFriction(0.0);
+    player_body->setRestitution(1.0);
     player_body->setCcdMotionThreshold(0.001f);
     player_body->setCcdSweptSphereRadius(0.25f);
     player_body->setActivationState(DISABLE_DEACTIVATION);

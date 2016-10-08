@@ -74,6 +74,8 @@ class Game:
         bool m_Retrigger = true;
 
         std::vector<Node*> m_FlagSpawns;
+        std::vector<Node*> m_StaticMeshes;
+        std::vector<Node*> m_Enemies;
 };
 
 #endif
