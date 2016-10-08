@@ -119,9 +119,15 @@ void Game :: preload()
         }
         else if(mesh->material()->texture()->filename().find("nav") != string::npos)
         {
-            m_Nav.push_back(mesh);
+            auto n = make_shared<Node>();
+            n->position(pmin);
+            m_pRoot->add(n);
+            m_Nav.push_back(n.get());
+            //m_Nav.push_back(mesh);
+            mesh->visible(false);
         }
-        else{
+        else
+        {
             m_StaticMeshes.push_back(mesh);
             mesh->set_physics(Node::STATIC);
         }
@@ -136,6 +142,7 @@ void Game :: preload()
         for(int j=0; j<children.size(); ++j){
             ((Mesh*)children[j].get())->material("data/e_flag.png", m_pQor->resources());
         }
+        m_Nav.push_back(m_FlagSpawns[i]);
     }
     
     m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
