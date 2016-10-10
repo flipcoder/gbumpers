@@ -21,11 +21,20 @@ class Enemy:
         Enemy& operator=(const Enemy&) = default;
         Enemy& operator=(Enemy&&) = default;
 
-    private:
+        Mesh* mesh() { return m_pMesh.get(); }
 
+    private:
+        
+        bool in_history(Node* node);
+        Node* closest_not_in_history(std::vector<Node*>& nav);
+
+        float m_Rotation = 0.0f;;
+        
         Game* m_pGame;
+        std::shared_ptr<Mesh> m_pMesh;
         Node* m_pTarget = nullptr;
         boost::circular_buffer<Node*> m_History;
+
 };
 
 #endif

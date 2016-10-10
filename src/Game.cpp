@@ -69,11 +69,20 @@ void Game :: preload()
             if(_this->m_Flags == _this->m_MaxFlags)
                 _this->next_map();
 
-            b->detach();
             b->visible(false);
         }
     });
+    m_pPipeline->partitioner()->on_collision(ENEMY, ENEMY_FLAG, [_this](Node* a, Node* b){
+        if(b->visible()){
+            Sound::play(_this->m_pCamera.get(), "eflag.wav", _this->m_pQor->resources());
+            ++_this->m_EnemyFlags;
+            if(_this->m_EnemyFlags == _this->m_MaxFlags)
+                _this->m_pQor->change_state("game");
 
+            b->visible(false);
+        }
+
+    });
     
     auto mesh = m_pQor->make<Mesh>(
         string("level") + m_pQor->args().value_or("map","1") + ".obj"
@@ -100,6 +109,11 @@ void Game :: preload()
             mesh->detach();
             m_FlagSpawns.push_back(flag.get());
         }
+        else if(mesh->material()->texture()->filename().find("ramp") != string::npos)
+        {
+            mesh->material("data/flag_marker.png", m_pQor->resources());
+            mesh->set_physics(Node::STATIC);
+        }
         else if(mesh->material()->texture()->filename().find("e_spawn") != string::npos)
         {
             auto e = make_shared<Enemy>("enemy.json", this, m_pQor->resources());
@@ -115,6 +129,7 @@ void Game :: preload()
             m_pRoot->add(e);
             e->position(pmin);
             mesh->visible(false);
+            m_pPipeline->partitioner()->register_object(e->mesh()->as_node(), ENEMY);
             m_Enemies.push_back(e);
         }
         else if(mesh->material()->texture()->filename().find("nav") != string::npos)
@@ -136,6 +151,7 @@ void Game :: preload()
     m_MaxFlags = m_FlagSpawns.size()/2; // half friendly, half enemy
     for(int i=0; i<m_MaxFlags; ++i) {
         m_pPipeline->partitioner()->register_object(m_FlagSpawns[i]->as_node(), PLAYER_FLAG);
+        m_FriendlyFlagSpawns.push_back(m_FlagSpawns[i]);
     }
     for(int i=m_MaxFlags; i<m_MaxFlags*2; ++i) {
         auto children = m_FlagSpawns[i]->children();
@@ -143,6 +159,7 @@ void Game :: preload()
             ((Mesh*)children[j].get())->material("data/e_flag.png", m_pQor->resources());
         }
         m_Nav.push_back(m_FlagSpawns[i]);
+        m_pPipeline->partitioner()->register_object(m_FlagSpawns[i]->as_node(), ENEMY_FLAG);
     }
     
     m_pPhysics->generate(m_pRoot.get(), Physics::GEN_RECURSIVE);
@@ -228,13 +245,18 @@ void Game :: logic(Freq::Time t)
     float max_speed = 3.0f + m_Light*1.0f;
     
     auto p = m_pPlayer->position();
-    auto hit = m_pPhysics->first_hit(
+    auto hits = m_pPhysics->hits(
         p, p - m_pPlayer->box().size().y - glm::vec3(0.0f, 1.0f, 0.0f)
     );
-    Node* hitnode = std::get<0>(hit);
-    auto norm = std::get<2>(hit);
-    if(norm.y > 0.8 && norm.y < 1.0 - K_EPSILON)
-        accel = 5.0f;
+    
+    Node* hitnode = nullptr;
+    if(not hits.empty())
+        hitnode = std::get<0>(hits[0]);
+    if(hitnode){
+        auto norm = std::get<2>(hits[0]);
+        if(norm.y > 0.8 && norm.y < 1.0 - K_EPSILON)
+            accel = 5.0f;
+    }
 
     glm::vec3 v = m_pPlayer->velocity();
     if(m_Disable.elapsed()){
@@ -262,29 +284,41 @@ void Game :: logic(Freq::Time t)
     m_pPlayer->velocity(v);
 
     if(m_Shield.elapsed()) {
-        if(hitnode)
+        bool ground = true;
+        for(auto&& hit: hits)
         {
-            auto mesh = ((Mesh*)hitnode);
+            auto mesh = ((Mesh*)std::get<0>(hit));
             string tex = mesh->material()->texture()->filename();
-            if(tex.find("ramp") != string::npos)
+            //if(tex.find("ramp") != string::npos)
+            //{
+            //    if(m_Retrigger){
+            //        auto geom = mesh->geometry()->verts();
+            //        auto wrap = mesh->get_modifier<Wrap>()->data();
+            //        LOG("wrap");
+            //        for(auto&& w: wrap)
+            //        {
+            //            LOG(Vector::to_string(w));
+            //        }
+            //    }
+            //    m_Retrigger = false;
+            //}
+            if(tex.find("flag_marker") != string::npos)
             {
                 if(m_Retrigger){
-                    auto geom = mesh->geometry()->verts();
-                    auto wrap = mesh->get_modifier<Wrap>()->data();
-                    LOG("wrap");
-                    for(auto&& w: wrap)
-                    {
-                        LOG(Vector::to_string(w));
+                    if(m_Flags){
+                        Sound::play(m_pCamera.get(), "block.wav", m_pQor->resources());
+                        --m_Flags;
+                        for(auto&& flag: m_FriendlyFlagSpawns)
+                        {
+                            if(not flag->visible()){
+                                flag->visible(true);
+                                break;
+                            }
+                        }
                     }
                 }
                 m_Retrigger = false;
-            }
-            else if(tex.find("flagmarker") != string::npos)
-            {
-                if(m_Retrigger){
-                    m_Flags = std::max(0, m_Flags - 1);
-                }
-                m_Retrigger = false;
+                ground = false;
             }
             else if(tex.find("target") != string::npos)
             {
@@ -294,11 +328,12 @@ void Game :: logic(Freq::Time t)
                     m_pPlayer->velocity(glm::vec3(0.0f));
                 }
                 m_Retrigger = false;
+                ground = false;
             }
-            else // normal ground
-            {
-                m_Retrigger = true;
-            }
+        }
+        if(ground)
+        {
+            m_Retrigger = true;
         }
     }
     
@@ -327,10 +362,10 @@ void Game :: render() const
 
 void Game :: next_map()
 {
-    auto mapname = m_pQor->args().value_or("map","1");
-    auto nextmap = to_string(boost::lexical_cast<int>(mapname) + 1);
+    //auto mapname = m_pQor->args().value_or("map","1");
+    //auto nextmap = to_string(boost::lexical_cast<int>(mapname) + 1);
 
-    m_pQor->args().set("map", nextmap);
+    //m_pQor->args().set("map", nextmap);
     m_pQor->change_state("game");
 }
 

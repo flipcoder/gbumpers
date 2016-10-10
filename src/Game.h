@@ -68,6 +68,7 @@ class Game:
 
         int m_Flags = 0;
         int m_MaxFlags = 0;
+        int m_EnemyFlags = 0;
 
         int m_Springs = 0;
         int m_Light = 0; // -1 red, 1 green
@@ -76,6 +77,7 @@ class Game:
         Freq::Alarm m_Disable;
         bool m_Retrigger = true;
 
+        std::vector<Node*> m_FriendlyFlagSpawns;
         std::vector<Node*> m_FlagSpawns;
         std::vector<Node*> m_StaticMeshes;
         std::vector<std::shared_ptr<Enemy>> m_Enemies;
